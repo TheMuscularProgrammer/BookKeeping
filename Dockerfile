@@ -6,6 +6,6 @@ COPY . .
 
 RUN pip install --no-cache-dir flask sqlalchemy psycopg2-binary
 
-EXPOSE 5000
+EXPOSE 5001
 
 CMD ["python", "hey.py"]
