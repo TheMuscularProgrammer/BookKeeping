@@ -1,7 +1,9 @@
 from flask import Flask, request, abort, jsonify, make_response, g
 from sqlalchemy import create_engine, text
 from sqlalchemy.exc import SQLAlchemyError
+from datetime import datetime
 import os
+import uuid
 import time
 import logging
 
@@ -49,10 +51,46 @@ def status():
     try:
         with engine.connect() as connection:
             connection.execute(text("SELECT 1")).fetchone()
-            return '{"status": "ok", "reason": "ok"}', 200
+            return '{"status": "ok", "message": "ok"}', 200
 
     except SQLAlchemyError as e:
-        return '{"status": "failed", "reason": "'+ str(e) +'"}', 500, 500
+        return '{"status": "failed", "message": "'+ str(e) +'"}', 500, 500
+
+@app.route('/users', methods=['POST'])
+def create_user():
+    try:
+        data = request.get_json()
+        if 'first_name' not in data:
+            return '{"error": "Bad Request", "message": "first_name is required"}', 400
+        if 'last_name' not in data:
+            return '{"error": "Bad Request", "message": "last_name is required"}', 400
+        if 'email' not in data:
+            return '{"error": "Bad Request", "message": "email is required"}', 400
+        if 'password' not in data:
+            return '{"error": "Bad Request", "message": "password is required"}', 400
+        
+        # TODO: Validate email and password complexity
+
+        with engine.connect() as connection:
+            user_id = str(uuid.uuid4())
+            result = connection.execute(
+                text("INSERT INTO users (id, first_name, last_name, email, password, created_at, updated_at) VALUES (:user_id, :first_name, :last_name, :email, :password, :created_at, :updated_at)"),
+                {
+                    'user_id': user_id,
+                    'first_name': data['first_name'],
+                    'last_name': data['last_name'],
+                    'email': data['email'],
+                    'password': data['password'],
+                    'created_at': datetime.now(),
+                    'updated_at': datetime.now()
+                })
+            connection.commit()
+                
+            return jsonify({"id": user_id}), 201
+
+    except SQLAlchemyError as e:
+        # TODO: Return a 400 in case we fail on email uniqueness
+        return '{"error": "Internal Server Error", "message": "'+ str(e) +'"}', 500
 
 @app.route('/version', methods=['GET'])
 def version():
