@@ -1,4 +1,5 @@
 -- Generated from: https://drawsql.app/teams/get-shit-done/diagrams/oribookkeeping
+-- How to connect: PGPASSWORD='example' psql -U postgres -h localhost -d mydatabase
 
 CREATE TABLE "accounts"(
     "id" BIGINT NOT NULL,
