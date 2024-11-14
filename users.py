@@ -3,10 +3,11 @@ from db import get_db_connection
 import bcrypt
 import uuid
 from datetime import datetime
+from sqlalchemy import text
 
 user_bp = Blueprint('user_bp', __name__)
 
-@user_bp.route('/users', methods=['POST'])
+@user_bp.route('/', methods=['POST'])
 def create_user():
     data = request.get_json()
     
@@ -26,7 +27,9 @@ def create_user():
     # Database connection and user creation
     with get_db_connection() as connection:
         existing_user = connection.execute(
-            "SELECT * FROM users WHERE email = :email", {'email': data['email']}).fetchone()
+            text("SELECT * FROM users WHERE email = :email"),
+            {'email': data['email']}
+        ).fetchone()
         
         if existing_user:
             return jsonify({"error": "Bad Request", "message": "Email already exists"}), 400
@@ -34,11 +37,19 @@ def create_user():
         # Generate new user ID
         user_id = str(uuid.uuid4())
         connection.execute(
-            "INSERT INTO users (id, first_name, last_name, email, password, created_at, updated_at) "
-            "VALUES (:user_id, :first_name, :last_name, :email, :password, :created_at, :updated_at)",
-            {'user_id': user_id, 'first_name': data['first_name'], 'last_name': data['last_name'],
-             'email': data['email'], 'password': hashed_password.decode('utf-8'),
-             'created_at': datetime.now(), 'updated_at': datetime.now()}
+            text(
+                "INSERT INTO users (id, first_name, last_name, email, password, created_at, updated_at) "
+                "VALUES (:user_id, :first_name, :last_name, :email, :password, :created_at, :updated_at)"
+            ),
+            {
+                'user_id': user_id, 
+                'first_name': data['first_name'], 
+                'last_name': data['last_name'],
+                'email': data['email'], 
+                'password': hashed_password.decode('utf-8'),
+                'created_at': datetime.now(), 
+                'updated_at': datetime.now()
+            }
         )
         connection.commit()
     

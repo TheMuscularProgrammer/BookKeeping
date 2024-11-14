@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 from db import get_db_connection
 import uuid
+from sqlalchemy import text
 
 account_bp = Blueprint('account_bp', __name__)
 
@@ -13,7 +14,7 @@ def create_account():
     account_id = str(uuid.uuid4())
     with get_db_connection() as connection:
         connection.execute(
-            "INSERT INTO accounts (id, owner_id) VALUES (:account_id, :owner_id)",
+            text("INSERT INTO accounts (id, owner_id) VALUES (:account_id, :owner_id)"),
             {'account_id': account_id, 'owner_id': data['owner_id']}
         )
         connection.commit()

@@ -5,16 +5,17 @@ services:
       context: .
       dockerfile: Dockerfile
     env_file:
-      - .env
+      - .env  
     ports:
       - "5001:5001"
     depends_on:
-      - db
+      - db  
+  
   db:
     image: postgres
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: example
-      POSTGRES_DB: mydatabase
+      POSTGRES_USER: postgres  
+      POSTGRES_PASSWORD: example  
+      POSTGRES_DB: mydatabase  
     ports:
       - "5432:5432"
