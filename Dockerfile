@@ -4,8 +4,13 @@ WORKDIR /app
 
 COPY . .
 
-RUN pip install --no-cache-dir flask sqlalchemy psycopg2-binary
+RUN pip install --no-cache-dir \
+    flask \
+    sqlalchemy \
+    psycopg2-binary \
+    bcrypt \
+    flask-jwt-extended
 
 EXPOSE 5001
 
-CMD ["python", "hey.py"]
+CMD ["python", "server.py"]
