@@ -14,47 +14,38 @@ def deposit(current_user_id, account_id):
     amount = data.get('amount')
     
     with get_db_connection() as connection:
-        try:
-            # Check account ownership
-            account = connection.execute(
-                text('SELECT * FROM accounts WHERE id = :account_id AND owner_id = :user_id'),
-                {'account_id': account_id, 'user_id': current_user_id}
-            ).fetchone()
-            
-            if not account:
-                return jsonify({"error": "Account not found or unauthorized"}), 403
-            
-            # Start transaction
-            connection.begin()
-            
-            # Update balance
-            connection.execute(
-                text('UPDATE accounts SET balance_cents = balance_cents + :amount WHERE id = :account_id'),
-                {'amount': amount, 'account_id': account_id}
-            )
-            
-            # Create transaction record
-            transaction_id = str(uuid.uuid4())
-            connection.execute(
-                text("""
-                    INSERT INTO transactions 
-                    (id, initiator_id, to_bank_account_id, amount, created_at, updated_at)
-                    VALUES (:id, :initiator_id, :account_id, :amount, :created_at, :updated_at)
-                """),
-                {
-                    'id': transaction_id,
-                    'initiator_id': current_user_id,
-                    'account_id': account_id,
-                    'amount': amount,
-                    'created_at': datetime.now(),
-                    'updated_at': datetime.now()
-                }
-            )
-            
-            connection.commit()
-        except Exception as e:
-            connection.rollback()
-            return jsonify({"error": str(e)}), 500
+        # Check account ownership
+        account = connection.execute(
+            text('SELECT * FROM accounts WHERE id = :account_id AND owner_id = :user_id'),
+            {'account_id': account_id, 'user_id': current_user_id}
+        ).fetchone()
+        
+        if not account:
+            return jsonify({"error": "Account not found or unauthorized"}), 403
+        
+        # Update balance
+        connection.execute(
+            text('UPDATE accounts SET balance_cents = balance_cents + :amount WHERE id = :account_id'),
+            {'amount': amount, 'account_id': account_id}
+        )
+        
+        # Create transaction record
+        transaction_id = str(uuid.uuid4())
+        connection.execute(
+            text("""
+                INSERT INTO transactions 
+                (id, initiator_id, to_bank_account_id, amount, created_at, updated_at)
+                VALUES (:id, :initiator_id, :to_bank_account_id, :amount, :created_at, :updated_at)
+            """),
+            {
+                'id': transaction_id,
+                'initiator_id': current_user_id,
+                'to_bank_account_id': account_id,
+                'amount': amount,
+                'created_at': datetime.now(),
+                'updated_at': datetime.now()
+            }
+        )
     
     return jsonify({"message": "Deposit successful", "transaction_id": transaction_id}), 200
 
@@ -65,56 +56,47 @@ def withdraw(current_user_id, account_id):
     amount = data.get('amount')
     
     with get_db_connection() as connection:
-        try:
-            # Check account ownership
-            account = connection.execute(
-                text('SELECT * FROM accounts WHERE id = :account_id AND owner_id = :user_id'),
-                {'account_id': account_id, 'user_id': current_user_id}
-            ).fetchone()
-            
-            if not account:
-                return jsonify({"error": "Account not found or unauthorized"}), 403
-            
-            # Check balance
-            current_balance = connection.execute(
-                text('SELECT balance_cents FROM accounts WHERE id = :account_id'),
-                {'account_id': account_id}
-            ).scalar()
+        # Check account ownership
+        account = connection.execute(
+            text('SELECT * FROM accounts WHERE id = :account_id AND owner_id = :user_id'),
+            {'account_id': account_id, 'user_id': current_user_id}
+        ).fetchone()
+        
+        if not account:
+            return jsonify({"error": "Account not found or unauthorized"}), 403
+        
+        # Check balance
+        current_balance = connection.execute(
+            text('SELECT balance_cents FROM accounts WHERE id = :account_id'),
+            {'account_id': account_id}
+        ).scalar()
 
-            if current_balance < amount:
-                return jsonify({"error": "Insufficient funds", "current_balance": current_balance}), 400
-            
-            # Start transaction
-            connection.begin()
-            
-            # Update balance
-            connection.execute(
-                text('UPDATE accounts SET balance_cents = balance_cents - :amount WHERE id = :account_id'),
-                {'amount': amount, 'account_id': account_id}
-            )
-            
-            # Create transaction record
-            transaction_id = str(uuid.uuid4())
-            connection.execute(
-                text("""
-                    INSERT INTO transactions 
-                    (id, initiator_id, from_bank_account_id, amount, created_at, updated_at)
-                    VALUES (:id, :initiator_id, :account_id, :amount, :created_at, :updated_at)
-                """),
-                {
-                    'id': transaction_id,
-                    'initiator_id': current_user_id,
-                    'account_id': account_id,
-                    'amount': amount,
-                    'created_at': datetime.now(),
-                    'updated_at': datetime.now()
-                }
-            )
-            
-            connection.commit()
-        except Exception as e:
-            connection.rollback()
-            return jsonify({"error": str(e)}), 500
+        if current_balance < amount:
+            return jsonify({"error": "Insufficient funds", "current_balance": current_balance}), 400
+        
+        # Update balance
+        connection.execute(
+            text('UPDATE accounts SET balance_cents = balance_cents - :amount WHERE id = :account_id'),
+            {'amount': amount, 'account_id': account_id}
+        )
+        
+        # Create transaction record
+        transaction_id = str(uuid.uuid4())
+        connection.execute(
+            text("""
+                INSERT INTO transactions 
+                (id, initiator_id, from_bank_account_id, amount, created_at, updated_at)
+                VALUES (:id, :initiator_id, :account_id, :amount, :created_at, :updated_at)
+            """),
+            {
+                'id': transaction_id,
+                'initiator_id': current_user_id,
+                'account_id': account_id,
+                'amount': amount,
+                'created_at': datetime.now(),
+                'updated_at': datetime.now()
+            }
+        )
     
     return jsonify({"message": "Withdrawal successful", "transaction_id": transaction_id}), 200
 
@@ -126,66 +108,57 @@ def transfer(current_user_id, from_account_id):
     to_account_id = data.get('to_account_id')
     
     with get_db_connection() as connection:
-        try:
-            # Check source account ownership
-            from_account = connection.execute(
-                text('SELECT * FROM accounts WHERE id = :from_account_id AND owner_id = :user_id'),
-                {'from_account_id': from_account_id, 'user_id': current_user_id}
-            ).fetchone()
-            
-            if not from_account:
-                return jsonify({"error": "Source account not found or unauthorized"}), 403
-            
-            # Check sufficient balance
-            if from_account.balance_cents < amount:
-                return jsonify({"error": "Insufficient funds", 
-                              "current_balance": from_account.balance_cents}), 400
-            
-            # Check destination account exists
-            to_account = connection.execute(
-                text('SELECT id FROM accounts WHERE id = :to_account_id'),
-                {'to_account_id': to_account_id}
-            ).fetchone()
-            
-            if not to_account:
-                return jsonify({"error": "Destination account not found"}), 404
-            
-            # Start transaction
-            connection.begin()
-            
-            # Update balances
-            connection.execute(
-                text('UPDATE accounts SET balance_cents = balance_cents - :amount WHERE id = :from_account_id'),
-                {'amount': amount, 'from_account_id': from_account_id}
-            )
-            connection.execute(
-                text('UPDATE accounts SET balance_cents = balance_cents + :amount WHERE id = :to_account_id'),
-                {'amount': amount, 'to_account_id': to_account_id}
-            )
-            
-            # Create transaction record
-            transaction_id = str(uuid.uuid4())
-            connection.execute(
-                text("""
-                    INSERT INTO transactions 
-                    (id, initiator_id, from_bank_account_id, to_bank_account_id, amount, created_at, updated_at)
-                    VALUES (:id, :initiator_id, :from_account_id, :to_account_id, :amount, :created_at, :updated_at)
-                """),
-                {
-                    'id': transaction_id,
-                    'initiator_id': current_user_id,
-                    'from_account_id': from_account_id,
-                    'to_account_id': to_account_id,
-                    'amount': amount,
-                    'created_at': datetime.now(),
-                    'updated_at': datetime.now()
-                }
-            )
-            
-            connection.commit()
-        except Exception as e:
-            connection.rollback()
-            return jsonify({"error": str(e)}), 500
+        # Check source account ownership
+        from_account = connection.execute(
+            text('SELECT * FROM accounts WHERE id = :from_account_id AND owner_id = :user_id'),
+            {'from_account_id': from_account_id, 'user_id': current_user_id}
+        ).fetchone()
+        
+        if not from_account:
+            return jsonify({"error": "Source account not found or unauthorized"}), 403
+        
+        # Check sufficient balance
+        if from_account.balance_cents < amount:
+            return jsonify({"error": "Insufficient funds", 
+                          "current_balance": from_account.balance_cents}), 400
+        
+        # Check destination account exists
+        to_account = connection.execute(
+            text('SELECT id FROM accounts WHERE id = :to_account_id'),
+            {'to_account_id': to_account_id}
+        ).fetchone()
+        
+        if not to_account:
+            return jsonify({"error": "Destination account not found"}), 404
+        
+        # Update balances
+        connection.execute(
+            text('UPDATE accounts SET balance_cents = balance_cents - :amount WHERE id = :from_account_id'),
+            {'amount': amount, 'from_account_id': from_account_id}
+        )
+        connection.execute(
+            text('UPDATE accounts SET balance_cents = balance_cents + :amount WHERE id = :to_account_id'),
+            {'amount': amount, 'to_account_id': to_account_id}
+        )
+        
+        # Create transaction record
+        transaction_id = str(uuid.uuid4())
+        connection.execute(
+            text("""
+                INSERT INTO transactions 
+                (id, initiator_id, from_bank_account_id, to_bank_account_id, amount, created_at, updated_at)
+                VALUES (:id, :initiator_id, :from_account_id, :to_account_id, :amount, :created_at, :updated_at)
+            """),
+            {
+                'id': transaction_id,
+                'initiator_id': current_user_id,
+                'from_account_id': from_account_id,
+                'to_account_id': to_account_id,
+                'amount': amount,
+                'created_at': datetime.now(),
+                'updated_at': datetime.now()
+            }
+        )
     
     return jsonify({"message": "Transfer successful", "transaction_id": transaction_id}), 200
 

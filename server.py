@@ -10,11 +10,26 @@ from health import health_bp
 from transactions import transactions_bp
 from login import login_bp
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.DEBUG)  
+logger = logging.getLogger(__name__)
+
 app = Flask(__name__)
 
-app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY')
+jwt_secret = os.environ.get('JWT_SECRET_KEY')
+logger.debug(f"JWT Secret Key: {jwt_secret}")  
+
+app.config['JWT_SECRET_KEY'] = jwt_secret
 jwt = JWTManager(app)
+
+@jwt.invalid_token_loader
+def invalid_token_callback(error):
+    logger.error(f"Invalid token error: {error}")  
+    return jsonify({"msg": "Invalid token", "error": str(error)}), 401
+
+@jwt.unauthorized_loader
+def unauthorized_callback(error):
+    logger.error(f"Unauthorized error: {error}")  
+    return jsonify({"msg": "Missing token", "error": str(error)}), 401
 
 # Middleware to start the timer for access log
 @app.before_request

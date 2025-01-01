@@ -8,11 +8,16 @@ if DATABASE_URL is None:
 
 engine = create_engine(DATABASE_URL.strip())
 
-# Context manager for getting DB connection
 @contextmanager
 def get_db_connection():
+    """Context manager for getting DB connection"""
     connection = engine.connect()
+    transaction = connection.begin()
     try:
         yield connection
+        transaction.commit()
+    except:
+        transaction.rollback()
+        raise
     finally:
         connection.close()
