@@ -1,21 +1,15 @@
 version: '3.8'
 services:
   web:
-<<<<<<< HEAD
     build:
       context: .
       dockerfile: Dockerfile
     env_file:
-      - .env  
-=======
-    image: bookkeeping-web
-    env_file:
       - .env
->>>>>>> 361cbad12280672b0acf533800f0ca858d3e0d22
     ports:
       - "5001:5001"
     depends_on:
-      - db  
+      - db
     environment:
       - JWT_SECRET_KEY=${JWT_SECRET_KEY}
       - DATABASE_URL=${DATABASE_URL}
@@ -23,15 +17,9 @@ services:
   db:
     image: postgres
     environment:
-<<<<<<< HEAD
-      POSTGRES_USER: postgres  
-      POSTGRES_PASSWORD: example  
-      POSTGRES_DB: mydatabase  
-=======
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: example
       POSTGRES_DB: mydatabase
->>>>>>> 361cbad12280672b0acf533800f0ca858d3e0d22
     ports:
       - "5432:5432"
     volumes:
