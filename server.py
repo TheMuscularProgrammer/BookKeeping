@@ -9,11 +9,20 @@ from accounts import account_bp
 from health import health_bp
 from transactions import transactions_bp
 from login import login_bp
+from flask_cors import CORS
 
 logging.basicConfig(level=logging.DEBUG)  
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
+CORS(app, resources={
+    r"/*": {
+        "origins": ["http://localhost:5173"],
+        "methods": ["GET", "POST", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization"]
+    }
+})
+
 
 jwt_secret = os.environ.get('JWT_SECRET_KEY')
 logger.debug(f"JWT Secret Key: {jwt_secret}")  
