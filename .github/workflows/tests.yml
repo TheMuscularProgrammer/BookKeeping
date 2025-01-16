@@ -21,17 +21,28 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install pytest requests python-dotenv bcrypt Flask-JWT-Extended sqlalchemy flask-cors
-        
-    - name: Run Flask server
+        pip install -r requirements.txt
+
+    - name: Start Flask Server
       run: |
         # Export required environment variables
+        export DATABASE_URL="sqlite:///:memory:"
         export JWT_SECRET_KEY="your-secret-key-here"
+        
         # Start Flask server in background
         python server.py &
+        
         # Wait for server to start
-        sleep 5
+        sleep 10
+        
+        # Check if server is running
+        curl http://localhost:5001/ || exit 1
         
     - name: Run tests
       run: |
+        # Export same environment variables for tests
+        export DATABASE_URL="sqlite:///:memory:"
+        export JWT_SECRET_KEY="your-secret-key-here"
+        
+        # Run pytest
         pytest tests/ -v
