@@ -21,27 +21,17 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install pytest requests python-dotenv bcrypt Flask-JWT-Extended psycopg2-binary sqlalchemy flask-cors
-
-    - name: Start Docker containers
+        pip install pytest requests python-dotenv bcrypt Flask-JWT-Extended sqlalchemy flask-cors
+        
+    - name: Run Flask server
       run: |
-        docker-compose up -d
-        # Wait for services to be ready
-        sleep 10
-
-    - name: Run database migrations
-      run: |
-        docker-compose exec -T db psql -U postgres -d mydatabase -f tables.sql
+        # Export required environment variables
+        export JWT_SECRET_KEY="your-secret-key-here"
+        # Start Flask server in background
+        python server.py &
+        # Wait for server to start
+        sleep 5
         
     - name: Run tests
       run: |
-        # Export required environment variables
-        export DATABASE_URL="postgresql://postgres:example@localhost:5432/mydatabase"
-        export JWT_SECRET_KEY="your-secret-key-here"
-        
-        # Run pytest
         pytest tests/ -v
-
-    - name: Cleanup
-      if: always()
-      run: docker-compose down
