@@ -3,9 +3,12 @@ from flask_cors import CORS
 import os
 from datetime import datetime
 import logging
+from metrics_middleware import setup_metrics
+
 
 app = Flask(__name__)
 CORS(app)
+setup_metrics(app)
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)

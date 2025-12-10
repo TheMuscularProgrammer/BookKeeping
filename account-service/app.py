@@ -5,10 +5,11 @@ from datetime import datetime
 from sqlalchemy import create_engine, text
 from contextlib import contextmanager
 import os
-
+from metrics_middleware import setup_metrics
 
 app = Flask(__name__)
 CORS(app)
+setup_metrics(app)
 
 # Configuration
 DATABASE_URL = os.environ.get('DATABASE_URL', 'postgresql://postgres:example@localhost:5432/mydatabase')

@@ -9,9 +9,11 @@ import jwt
 import json
 from kafka import KafkaProducer
 import redis
+from metrics_middleware import setup_metrics
 
 app = Flask(__name__)
 CORS(app)
+setup_metrics(app)
 
 # Configuration
 DATABASE_URL = os.environ.get('DATABASE_URL', 'postgresql://postgres:example@localhost:5432/mydatabase')
